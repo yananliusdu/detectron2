@@ -120,9 +120,7 @@ if __name__ == '__main__':
   ce=[]
   for i in range(len(feats)):   
       predictions1 = predictor.model.roi_heads.box_predictor(feats[i])
-      
- 
- 
+
       box=pred_instances[0]['instances'].pred_boxes.tensor.cpu().detach().numpy()[i]
       
       center=[int((box[0]+box[2])/2),int((box[1]+box[3])/2)]
