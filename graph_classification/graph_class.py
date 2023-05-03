@@ -23,7 +23,7 @@ path='/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/crops graph clas
 model_path='/media/yanan/One Touch/detectron2_data_Ma/detectron2_data'
 
 # part2-0, part3-1, part4-2
-tsk_dimension = 32
+tsk_dimension = 96
 tsk_part2 = np.array([0 for j in range(tsk_dimension)])
 tsk_part3 = np.array([1 for j in range(tsk_dimension)])
 tsk_part4 = np.array([1 for j in range(tsk_dimension)])
@@ -148,7 +148,7 @@ def test(loader):
 
 def train_model(datasets):
     model.train()
-    datas=DataLoader(datasets, batch_size=8, shuffle=True)
+    datas=DataLoader(datasets, batch_size=16, shuffle=True)
     for _ in range(300):
       for data in datas:
         out=model(data.x,data.edge_index,data.edge_weight,data.batch)

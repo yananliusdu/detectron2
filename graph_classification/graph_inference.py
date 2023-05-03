@@ -21,7 +21,14 @@ from torch_geometric.data import Data
 from torch_geometric.nn import GraphConv
 from torch_geometric.loader import DataLoader
 import cv2
+import torch.nn.functional as F
 
+# part2-0, part3-1, part4-2
+tsk_dimension = 96
+tsk_part2 = np.array([0 for j in range(tsk_dimension)])
+tsk_part3 = np.array([1 for j in range(tsk_dimension)])
+tsk_part4 = np.array([1 for j in range(tsk_dimension)])
+f='80'
 
 def create_link(num1,num2):
    
@@ -76,7 +83,7 @@ path_list=os.listdir(path)
 path_list.sort()
 BATCH=[]
 count1=0
-f='108'
+
 di=os.path.join(path, f)
 item=os.listdir(di)
 file=[]
@@ -88,7 +95,14 @@ for filename in item:
         
         data=np.load(os.path.join(di,filename),allow_pickle=True)
         p_arr = data.reshape(-1)[0]['feature'].cpu().detach().numpy()
-        x.append(p_arr)
+        obj_label = data.reshape(-1)[0]['label']
+        if obj_label == 0:
+            c = np.concatenate((p_arr, tsk_part2))
+        elif obj_label == 1:
+            c = np.concatenate((p_arr, tsk_part3))
+        elif obj_label == 2:
+            c = np.concatenate((p_arr, tsk_part4))
+        x.append(c)
         center.append(data.reshape(-1)[0]['center'])
         boxes.append(data.reshape(-1)[0]['box'])
      if os.path.splitext(filename)[1] == '.txt':
@@ -119,22 +133,26 @@ class GNN(torch.nn.Module):
     def __init__(self, hidden_channels):
         super(GNN, self).__init__()
         torch.manual_seed(12345)
-        self.conv1 =GraphConv(1024, hidden_channels) 
-        self.conv2 =GraphConv(hidden_channels, 128)  
-        self.conv3 =GraphConv(128, 2)
-      
+        self.conv1 =GraphConv(1024 + tsk_dimension, hidden_channels)
+        self.conv2 =GraphConv(hidden_channels, 128)
+        self.fc1 = torch.nn.Linear(128, 64)
+        self.fc2 = torch.nn.Linear(64, 2)
 
     def forward(self, x, edge_index,edge_weight, batch):
         x = self.conv1(x=x, edge_index=edge_index,edge_weight=edge_weight)
         x = x.relu()
         x = self.conv2(x=x, edge_index=edge_index,edge_weight=edge_weight)
         x = x.relu()
-        x = self.conv3(x=x, edge_index=edge_index,edge_weight=edge_weight)
+        # x=readou
+        # pro=self.mlp(x)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
 
-        return x
+        return F.log_softmax(x, dim=1)
 
 model = GNN(hidden_channels=256)
-model.load_state_dict(torch.load('/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/encoder.pt'))
+model.load_state_dict(torch.load('/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/object_to_grasp.pt'))
 
 batch=[0]*data.x.size()[0]
 batch=torch.tensor(batch)
