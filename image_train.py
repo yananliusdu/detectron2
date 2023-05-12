@@ -63,8 +63,8 @@ if __name__ == '__main__':
  cfg.SOLVER.IMS_PER_BATCH = 4
  cfg.SOLVER.BASE_LR = 0.0025
  cfg.SOLVER.STEPS = []
- cfg.SOLVER.MAX_ITER = (500)  # 300 iterations seems good enough, but you can certainly train longer
- cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = (128)  # faster, and good enough for this toy dataset
+ cfg.SOLVER.MAX_ITER = (700)  # 300 iterations seems good enough, but you can certainly train longer
+ cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = (256)  # faster, and good enough for this toy dataset
  cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
  os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
  trainer = DefaultTrainer(cfg)

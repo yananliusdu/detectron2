@@ -18,17 +18,27 @@ import os
 import numpy as np
 import torch
 from torch_geometric.data import Data
-from torch_geometric.nn import GraphConv
+from torch_geometric.nn import GCNConv
 from torch_geometric.loader import DataLoader
 import cv2
 import torch.nn.functional as F
+from torch_geometric.nn import global_mean_pool
+from torch.nn import Linear
 
 # part2-0, part3-1, part4-2
-tsk_dimension = 96
-tsk_part2 = np.array([0 for j in range(tsk_dimension)])
-tsk_part3 = np.array([1 for j in range(tsk_dimension)])
-tsk_part4 = np.array([1 for j in range(tsk_dimension)])
-f='80'
+tsk_dimension = 32
+tsk_part2 = np.array([1 for j in range(tsk_dimension)])
+tsk_part3 = np.array([0 for j in range(tsk_dimension)])
+tsk_part4 = np.array([0 for j in range(tsk_dimension)])
+f='20'
+label = 0
+def tsk_architecture(label, dimension):
+    ar = [0]*3
+    ar[label] = 1
+    p2 = np.array([ar[0] for j in range(dimension)])
+    p3 = np.array([ar[1] for j in range(dimension)])
+    p4 = np.array([ar[2] for j in range(dimension)])
+    return p2, p3, p4
 
 def create_link(num1,num2):
    
@@ -96,6 +106,7 @@ for filename in item:
         data=np.load(os.path.join(di,filename),allow_pickle=True)
         p_arr = data.reshape(-1)[0]['feature'].cpu().detach().numpy()
         obj_label = data.reshape(-1)[0]['label']
+        tsk_part2, tsk_part3, tsk_part4 = tsk_architecture(label, tsk_dimension)
         if obj_label == 0:
             c = np.concatenate((p_arr, tsk_part2))
         elif obj_label == 1:
@@ -129,29 +140,34 @@ we=torch.tensor(Weight,dtype=torch.float)
 data=Data(x=x,edge_index=edge,edge_weight=we)
 
 
-class GNN(torch.nn.Module):
+class GCN(torch.nn.Module):
     def __init__(self, hidden_channels):
-        super(GNN, self).__init__()
+        super(GCN, self).__init__()
         torch.manual_seed(12345)
-        self.conv1 =GraphConv(1024 + tsk_dimension, hidden_channels)
-        self.conv2 =GraphConv(hidden_channels, 128)
-        self.fc1 = torch.nn.Linear(128, 64)
-        self.fc2 = torch.nn.Linear(64, 2)
+        self.conv1 = GCNConv(1024 + tsk_dimension, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, 128)
+        self.conv3 = GCNConv(128, 64)
+        self.lin = Linear(64, 3)
 
-    def forward(self, x, edge_index,edge_weight, batch):
-        x = self.conv1(x=x, edge_index=edge_index,edge_weight=edge_weight)
+    def forward(self, x, edge_index, edge_weight, batch):
+        # 1. Obtain node embeddings
+        x = self.conv1(x, edge_index, edge_weight)
         x = x.relu()
-        x = self.conv2(x=x, edge_index=edge_index,edge_weight=edge_weight)
+        x = self.conv2(x, edge_index, edge_weight)
         x = x.relu()
-        # x=readou
-        # pro=self.mlp(x)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
+        x = self.conv3(x, edge_index, edge_weight)
 
-        return F.log_softmax(x, dim=1)
+        # 2. Readout layer
+        x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
-model = GNN(hidden_channels=256)
+        # 3. Apply a final classifier
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = self.lin(x)
+
+        return x
+
+
+model = GCN(hidden_channels=256)
 model.load_state_dict(torch.load('/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/object_to_grasp.pt'))
 
 batch=[0]*data.x.size()[0]
