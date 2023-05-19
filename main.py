@@ -76,10 +76,10 @@ if __name__ == '__main__':
  data_set1=[]
 
  save_root=r'/home/yanan/project-2/project/test_tmp'
- f_='178/ori.png'
+ f_='176/ori.png'
  data_f=os.path.join(path,f_)
  #把探测到的数据保存
- temp_f=4
+ temp_f=5
  save_path=os.path.join(save_root, str(temp_f))
 
  image1= cv2.imread(data_f)

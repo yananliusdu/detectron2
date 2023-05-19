@@ -68,11 +68,11 @@ if __name__ == '__main__':
  cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set a custom testing threshold
  dataset_dicts = DatasetCatalog.get("my_val")
  predictor = DefaultPredictor(cfg)
- path = '/media/yanan/One Touch/detectron2_data/color/'
+ path = '/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/color/'
  path_list=os.listdir(path)
  data_set1=[]
  f=[]
- save_root='/media/yanan/One Touch/detectron2_data/crops2/'
+ save_root='/media/yanan/One Touch/detectron2_data_Ma/detectron2_data/crops_temp/'
  count=0
  for filename in path_list:
     if os.path.splitext(filename)[1] == '.png':
